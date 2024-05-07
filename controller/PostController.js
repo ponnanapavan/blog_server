@@ -13,7 +13,6 @@ async function getAllBlogPosts(req, res) {
                 username: post.postedBy.username
             };
         });
-        console.log(postsWithUsername);
         res.status(200).json(postsWithUsername);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -83,18 +82,30 @@ async function updateBlogPost(req,res){
 async function deleteBlogPost(req, res) {
     try {
         const { postId } = req.params;
+    
+        // Delete the post with the given postId
         const deletedPost = await Post.findByIdAndDelete(postId);
+        
+       
         if (!deletedPost) {
             return res.status(404).json({ error: 'Post not found' });
         }
-        const remainingPosts = await Post.find();
-        return res.status(200).json(remainingPosts);
+        const allPosts = await Post.find().sort({ createdAt: -1 }).populate('postedBy', 'username');
+        if (!allPosts || allPosts.length === 0) {
+            return res.status(400).json({ error: "No posts found" });
+        }
+        const postsWithUsername = allPosts.map(post => {
+            return {
+                ...post.toObject(),
+                username: post.postedBy.username
+            };
+        });
+             console.log(postsWithUsername)
+        return res.status(200).json(postsWithUsername);
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'An error occurred while deleting the post' });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 }
-
 async function getIdPost(req,res)
 {
     const {postId}=req.params;
